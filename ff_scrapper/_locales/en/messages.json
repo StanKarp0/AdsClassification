@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "AdScrapper",
+    "description": "Name of the extension."
+  },
+
+  "extensionDescription": {
+    "message": "Demonstrates the menus API.",
+    "description": "Description of the add-on."
+  }
+}
