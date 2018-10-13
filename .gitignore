@@ -1,2 +1,4 @@
 *.h5
+classification/train_df.csv
+classification/test_df.csv
 .idea/

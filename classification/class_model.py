@@ -1,11 +1,11 @@
 from tensorflow import keras
 from tensorflow.python.keras import Sequential, Model
-from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Conv3D, MaxPooling3D
 
 from classification import data_handler
 
 
-MODEL_INPUT_SHAPE: tuple = (data_handler.IMAGE_SIZE, data_handler.IMAGE_SIZE, 1)
+MODEL_INPUT_SHAPE: tuple = (data_handler.IMAGE_SIZE, data_handler.IMAGE_SIZE, 3)
 
 
 class AccuracyHistory(keras.callbacks.Callback):

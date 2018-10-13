@@ -1,40 +1,26 @@
-import glob
-import pandas as pd
-from skimage import transform, color
+import json
 
-import skimage.io
-from os import path
-import os
 import numpy as np
+import pandas as pd
+import skimage.io
+from skimage import transform
+
+# Data paths
+from tensorflow.python.keras.utils import Sequence
+
+INPUT_DIRECTION: str = r'/home/wojciech/Studia/izn/ads/'
+LABELS_PATH: str = r'/home/wojciech/Studia/izn/annotations_images/image/Topics.json'
+TRAIN_CSV_FILENAME: str = 'train_df.csv'
+TEST_CSV_FILENAME: str = 'test_df.csv'
 
 # Data config constant
-IMAGE_SIZE: int = 100
+IMAGE_SIZE: int = 224
 IMAGE_FLATTEN: int = IMAGE_SIZE * IMAGE_SIZE
 IMAGE_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE)
 
-NUM_CATEGORIES: int = 20
-CATEGORIES: pd.DataFrame = pd.DataFrame({
-    'label': np.arange(NUM_CATEGORIES, dtype=np.int) + 1,
-    'text': ['Clothing & Shoes',
-             'Automotive',
-             'Baby',
-             'Health & Beauty',
-             'Media',
-             'Consumer Electronics',
-             'Console & Video Games',
-             'Tools & Hardware',
-             'Outdoor Living',
-             'Grocery',
-             'Home',
-             'Betting',
-             'Jewelery & Watches',
-             'Musical instruments',
-             'Stationery & Office Supplies',
-             'Pet Supplies',
-             'Computer Software',
-             'Sports',
-             'Toys & Games',
-             'Social Dating Sites']})
+# Categories
+CATEGORIES: pd.DataFrame = pd.read_csv('labels.csv')
+NUM_CATEGORIES: int = CATEGORIES.shape[0]
 
 
 def _get_image(image_path: str) -> np.array:
@@ -51,7 +37,7 @@ def _get_image(image_path: str) -> np.array:
 
     # image resize and conversion to grey scale
     image = transform.resize(image, IMAGE_SHAPE)
-    image = color.rgb2grey(image)
+    # image = color.rgb2grey(image)
 
     return image
 
@@ -74,37 +60,6 @@ def _shuffle_split_train_test(df: pd.DataFrame, train_ratio: float = 0.7) -> tup
     return train_df, test_df
 
 
-def get_paths(input_directory: str, train_ratio:float=0.7) -> tuple:
-    """
-    Function prepare data
-    :param input_directory: path to data directory
-    :param train_ratio:
-    :return: tuple (train_df: pd.DataFrame, test_df: pd.DataFrame)
-    """
-    label_dfs = []
-
-    # list of labels
-    directories = [d for d in os.listdir(input_directory) if path.isdir(path.join(input_directory, d))]
-
-    # iteration over categories folders
-    for label in directories:
-        # find every file in category folder
-        label_directory = path.join(input_directory, label)
-        input_paths = glob.glob(label_directory + '/*.png')
-
-        # create dataframe for label
-        label_df = pd.DataFrame({'path': input_paths, 'label': int(label)})
-        label_dfs.append(label_df)
-
-    # create one dataframe from list of dataframes with different labels
-    input_df = pd.concat(label_dfs, ignore_index=True)
-
-    # shuffle and split data
-    train, test = _shuffle_split_train_test(input_df, train_ratio)
-
-    return train, test
-
-
 def _label_to_hot_one(label: pd.Series) -> np.ndarray:
     """
     Function transform labels to hot_one like array.
@@ -116,29 +71,79 @@ def _label_to_hot_one(label: pd.Series) -> np.ndarray:
     return arr
 
 
-def get_data_set(data: pd.DataFrame) -> tuple:
+def _get_data_set(data: pd.DataFrame) -> tuple:
     """
 
     :param data:
     :return:
     """
-    data['image'] = data['path'].apply(_get_image)
-    x = np.array(list(data['image']))[:, :, :, None]
-    y = _label_to_hot_one(data['label'])
+    data['image'] = data['path_to_image'].apply(_get_image)
+    x = np.array(list(data['image']))
+    y = _label_to_hot_one(data['label'].reset_index(drop=True))
     return x, y
 
 
-def get_data_set_generator(data: pd.DataFrame, batch_size: int=100):
+def get_paths(input_directory: str, label_path: str, train_ratio:float=0.7) -> (pd.DataFrame, pd.DataFrame):
     """
-    Function creates eager images generator.
-    :param data:
-    :param batch_size:
+    Function prepare data
+    :param label_path:
+    :param input_directory: path to data directory
+    :param train_ratio:
+    :return: tuple (train_df: pd.DataFrame, test_df: pd.DataFrame)
+    """
+
+    # Loading Topics json to pandas DataFrame.
+    with open(label_path, 'r') as label_path_file:
+        labels_json = json.load(label_path_file)
+
+        # Topics dict structure [{path_to_image: [list of topics, various list sizes]}]
+        # Flatten inner list - list of topics. Index as path and values topics. Multiple rows
+        # for one image
+        labels_df = pd.DataFrame.from_dict(labels_json, orient='index').unstack(0).dropna()
+
+        # Filter out not numerical labels.
+        labels_df = labels_df[labels_df.str.contains(r'^[0-9]{1,2}$')].astype(int)
+
+        # Adding path as column and dropping duplicates of pair (path, topic).
+        labels_df = labels_df.reset_index(1).drop_duplicates().reset_index(drop=True)
+
+        # Rename df columns.
+        labels_df = labels_df.rename(columns={'level_1': 'path', 0: 'label'})
+
+        # Append absolute path to image
+        labels_df['path_to_image'] = input_directory + labels_df.path.astype(str)
+
+    # shuffle data and split into test and train set
+    train, test = _shuffle_split_train_test(labels_df, train_ratio)
+
+    return train, test
+
+
+class PittAdsSequence(Sequence):
+
+    def __init__(self, path_to_df, batch_size=64):
+        self._batch_size = batch_size
+        self._paths_df = pd.read_csv(path_to_df)
+        self._len = int(self._paths_df.shape[0] / batch_size)
+
+    def __getitem__(self, index):
+        start = index * self._batch_size
+        batch_df = self._paths_df.iloc[start:start + self._batch_size]
+        return _get_data_set(batch_df)
+
+    def __len__(self):
+        return self._len
+
+
+def construct_path_csv():
+    """
+
     :return:
     """
-    num_generated = 0
-    num_labels = data.shape[0]
+    train_df, test_df = get_paths(INPUT_DIRECTION, LABELS_PATH)
+    train_df.to_csv(TRAIN_CSV_FILENAME, index=False)
+    test_df.to_csv(TEST_CSV_FILENAME, index=False)
 
-    while num_generated < num_labels:
-        batch_df = data.iloc[num_generated:num_generated+batch_size]
-        num_generated += batch_size
-        yield get_data_set(batch_df)
+
+if __name__ == '__main__':
+    construct_path_csv()
