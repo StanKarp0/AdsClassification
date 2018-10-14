@@ -1,4 +1,6 @@
 import json
+import sys
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -7,6 +9,8 @@ from skimage import transform
 
 # Data paths
 from tensorflow.python.keras.utils import Sequence
+
+from classification import categories
 
 INPUT_DIRECTION: str = r'/home/wojciech/Studia/izn/ads/'
 LABELS_PATH: str = r'/home/wojciech/Studia/izn/annotations_images/image/Topics.json'
@@ -19,11 +23,11 @@ IMAGE_FLATTEN: int = IMAGE_SIZE * IMAGE_SIZE
 IMAGE_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE)
 
 # Categories
-CATEGORIES: pd.DataFrame = pd.read_csv('labels.csv')
+CATEGORIES: pd.DataFrame = categories.CATEGORIES
 NUM_CATEGORIES: int = CATEGORIES.shape[0]
 
 
-def _get_image(image_path: str) -> np.array:
+def _get_image(image_path: str, reshape=True) -> np.array:
     """
     Function process input image path
     :param image_path: path to image
@@ -36,7 +40,8 @@ def _get_image(image_path: str) -> np.array:
         image = image[0]
 
     # image resize and conversion to grey scale
-    image = transform.resize(image, IMAGE_SHAPE)
+    if reshape:
+        image = transform.resize(image, IMAGE_SHAPE)
     # image = color.rgb2grey(image)
 
     return image
@@ -81,6 +86,10 @@ def _get_data_set(data: pd.DataFrame) -> tuple:
     x = np.array(list(data['image']))
     y = _label_to_hot_one(data['label'].reset_index(drop=True))
     return x, y
+
+
+def get_images(paths_to_images: pd.Series) -> pd.Series:
+    return paths_to_images.apply(partial(_get_image, reshape=False))
 
 
 def get_paths(input_directory: str, label_path: str, train_ratio:float=0.7) -> (pd.DataFrame, pd.DataFrame):

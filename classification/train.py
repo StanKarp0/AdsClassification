@@ -1,9 +1,8 @@
 import os
-import numpy as np
+
 from matplotlib import pyplot as plt
 
-from classification import data_handler, vis, class_model
-
+from classification import data_handler, class_model
 
 BATCH_SIZE = 64
 EPOCHS = 1
