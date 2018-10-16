@@ -21,6 +21,7 @@ TEST_CSV_FILENAME: str = 'test_df.csv'
 IMAGE_SIZE: int = 224
 IMAGE_FLATTEN: int = IMAGE_SIZE * IMAGE_SIZE
 IMAGE_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE)
+IMAGE_INPUT_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE, 3)
 
 # Categories
 CATEGORIES: pd.DataFrame = categories.CATEGORIES
@@ -31,17 +32,21 @@ def _get_image(image_path: str, reshape=True) -> np.array:
     """
     Function process input image path
     :param image_path: path to image
-    :return: np.array of size (IMAGE_SIZE, IMAGE_SIZE, 1)
+    :return: np.array of size (IMAGE_SIZE, IMAGE_SIZE, 3)
     """
     image = skimage.io.imread(image_path)
 
     # case when png animation - first dimension contains animation frames
     if image.ndim > 3:
         image = image[0]
+    # in case of gray only image.
+    elif image.ndim == 2:
+        image = np.tile(image[:, :, None], (1, 1, 3))
 
     # image resize and conversion to grey scale
     if reshape:
         image = transform.resize(image, IMAGE_SHAPE)
+        assert image.shape == IMAGE_INPUT_SHAPE, 'Image: %s' % str(image.shape)
     # image = color.rgb2grey(image)
 
     return image
@@ -65,7 +70,7 @@ def _shuffle_split_train_test(df: pd.DataFrame, train_ratio: float = 0.7) -> tup
     return train_df, test_df
 
 
-def _label_to_hot_one(label: pd.Series) -> np.ndarray:
+def label_to_hot_one(label: pd.Series) -> np.ndarray:
     """
     Function transform labels to hot_one like array.
     :param label:
@@ -84,7 +89,7 @@ def _get_data_set(data: pd.DataFrame) -> tuple:
     """
     data['image'] = data['path_to_image'].apply(_get_image)
     x = np.array(list(data['image']))
-    y = _label_to_hot_one(data['label'].reset_index(drop=True))
+    y = label_to_hot_one(data['label'].reset_index(drop=True))
     return x, y
 
 

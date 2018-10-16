@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 
 from classification import data_handler, class_model
 
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 EPOCHS = 1
 
 
