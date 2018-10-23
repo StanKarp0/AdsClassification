@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 
+import utils
 from classification import data_handler, vis
 from object_detection.utils import label_map_util
 from object_detection.utils import ops as utils_ops
@@ -9,10 +10,6 @@ from object_detection.utils import visualization_utils as vis_util
 
 # PATH_TO_FROZEN_GRAPH: str = \
 #     r'/home/wojciech/Studia/izn/faster_rcnn_inception_resnet_v2_atrous_oid_2018_01_28/frozen_inference_graph.pb'
-PATH_TO_FROZEN_GRAPH: str = \
-    '/home/wojciech/Dev/ObjectDetection/models/research/object_detection/ssd_mobilenet_v1_coco_2017_11_17/frozen_inference_graph.pb'
-PATH_TO_LABELS: str = \
-    r'/home/wojciech/Dev/ObjectDetection/models/research/object_detection/data/mscoco_label_map.pbtxt'
 
 
 def run_inference_for_single_image(image, graph):
@@ -61,7 +58,7 @@ def run_inference_for_single_image(image, graph):
 
 def main():
     data_handler.IMAGE_SIZE = 500
-    examples, _ = data_handler.get_paths(data_handler.INPUT_DIRECTION, data_handler.LABELS_PATH, 1.)
+    examples, _ = data_handler.get_paths(utils.INPUT_DIRECTION, utils.LABELS_PATH, 1.)
     examples = examples.iloc[:16]
     examples['image'] = data_handler.get_images(examples['path_to_image'])
     vis.show_images(examples)
@@ -69,12 +66,12 @@ def main():
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
-        with tf.gfile.GFile(PATH_TO_FROZEN_GRAPH, 'rb') as fid:
+        with tf.gfile.GFile(utils.PATH_TO_FROZEN_GRAPH, 'rb') as fid:
             serialized_graph = fid.read()
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
 
-    category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
+    category_index = label_map_util.create_category_index_from_labelmap(utils.PATH_TO_LABELS, use_display_name=True)
 
     for _, row in examples.iterrows():
         output_dict = run_inference_for_single_image(row['image'], detection_graph)

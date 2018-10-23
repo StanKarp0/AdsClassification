@@ -10,10 +10,9 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QButtonGroup, QG
     QHBoxLayout, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 from skimage import transform
 
+import utils
 from classification import data_handler as dh
 
-OUTPUT_FILE_PATH = r'/home/wojciech/Studia/izn/annotations_images/labels.csv'
-DROPPED_FILE_PATH = r'/home/wojciech/Studia/izn/annotations_images/dropped.csv'
 SCENE_SIZE = 900
 
 
@@ -42,19 +41,19 @@ class LabelingTool(QMainWindow):
         h_layout.addLayout(v_layout)
 
         # load labeled data
-        if os.path.isfile(OUTPUT_FILE_PATH):
-            self._labeled_data: pd.DataFrame = pd.read_csv(OUTPUT_FILE_PATH)
+        if os.path.isfile(utils.LABELLING_OUTPUT_PATH):
+            self._labeled_data: pd.DataFrame = pd.read_csv(utils.LABELLING_OUTPUT_PATH)
         else:
             self._labeled_data: pd.DataFrame = pd.DataFrame(columns=['path', 'label', 'path_to_image'])
 
         # load dropped data
-        if os.path.isfile(DROPPED_FILE_PATH):
-            self._dropped_data: pd.DataFrame = pd.read_csv(DROPPED_FILE_PATH)
+        if os.path.isfile(utils.LABELLING_DROPPED_PATH):
+            self._dropped_data: pd.DataFrame = pd.read_csv(utils.LABELLING_DROPPED_PATH)
         else:
             self._dropped_data: pd.DataFrame = pd.DataFrame(columns=['path', 'label', 'path_to_image'])
 
         # load all data
-        unlabeled_data, _ = dh.get_paths(dh.INPUT_DIRECTION, dh.LABELS_PATH, 1)
+        unlabeled_data, _ = dh.get_paths(utils.INPUT_DIRECTION, utils.LABELS_PATH, 1)
 
         # filter previously labeled and dropped
         previous_labeled = unlabeled_data['path'].isin(self._labeled_data['path'])
@@ -127,8 +126,8 @@ class LabelingTool(QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         QMainWindow.closeEvent(self, event)
-        self._labeled_data[['label', 'path', 'path_to_image']].to_csv(OUTPUT_FILE_PATH, index=False)
-        self._dropped_data[['label', 'path', 'path_to_image']].to_csv(DROPPED_FILE_PATH, index=False)
+        self._labeled_data[['label', 'path', 'path_to_image']].to_csv(utils.LABELLING_OUTPUT_PATH, index=False)
+        self._dropped_data[['label', 'path', 'path_to_image']].to_csv(utils.LABELLING_DROPPED_PATH, index=False)
 
 
 def labels2list(group: pd.DataFrame) -> list:

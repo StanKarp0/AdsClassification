@@ -2,17 +2,21 @@ import os
 
 from matplotlib import pyplot as plt
 
+import utils
 from classification import data_handler, class_model
+from labeling import tool
 
-BATCH_SIZE = 16
-EPOCHS = 1
+
+BATCH_SIZE: int = 16
+EPOCHS: int = 1
 
 
 def main():
 
     # Creating paths dataframes or using existing ones.
     if not (os.path.isfile(data_handler.TRAIN_CSV_FILENAME) and os.path.isfile(data_handler.TRAIN_CSV_FILENAME)):
-        data_handler.construct_path_csv()
+        data_handler.construct_path_csv(train_ratio=0.7,
+                                        labels_csv=utils.LABELLING_OUTPUT_PATH)
 
     # Creating eager generator for data loading.
     train_generator = data_handler.PittAdsSequence(data_handler.TRAIN_CSV_FILENAME, BATCH_SIZE)
@@ -30,7 +34,7 @@ def main():
                         callbacks=[history])
 
     # Saving model.
-    model.save_weights('class.h5')
+    model.save_weights(utils.MODEL_SAVE_PATH)
 
     # Refill generator.
     test_iterator = data_handler.PittAdsSequence(data_handler.TEST_CSV_FILENAME, BATCH_SIZE)

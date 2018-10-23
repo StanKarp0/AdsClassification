@@ -10,10 +10,9 @@ from skimage import transform
 # Data paths
 from tensorflow.python.keras.utils import Sequence
 
+import utils
 from classification import categories
 
-INPUT_DIRECTION: str = r'/home/wojciech/Studia/izn/ads/'
-LABELS_PATH: str = r'/home/wojciech/Studia/izn/annotations_images/image/Topics.json'
 TRAIN_CSV_FILENAME: str = 'train_df.csv'
 TEST_CSV_FILENAME: str = 'test_df.csv'
 
@@ -149,12 +148,20 @@ class PittAdsSequence(Sequence):
         return self._len
 
 
-def construct_path_csv():
+def construct_path_csv(train_ratio: float, labels_csv: pd.DataFrame=pd.DataFrame()):
     """
 
     :return:
     """
-    train_df, test_df = get_paths(INPUT_DIRECTION, LABELS_PATH)
+    # check if labels pd is defined
+    if labels_csv is None:
+        # take all
+        train_df, test_df = get_paths(utils.INPUT_DIRECTION, utils.LABELS_PATH, train_ratio)
+    else:
+        # take ony from labels dataframe
+        train_df, test_df = _shuffle_split_train_test(labels_csv, train_ratio)
+
+    # Save to temporary files
     train_df.to_csv(TRAIN_CSV_FILENAME, index=False)
     test_df.to_csv(TEST_CSV_FILENAME, index=False)
 
