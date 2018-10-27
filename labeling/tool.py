@@ -7,7 +7,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QButtonGroup, QGridLayout, QCheckBox, QVBoxLayout, \
-    QHBoxLayout, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+    QHBoxLayout, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QTableWidget, QTableWidgetItem
 from skimage import transform
 
 import utils
@@ -66,7 +66,7 @@ class LabelingTool(QMainWindow):
         self._category_group.setExclusive(False)
         category_grid = QGridLayout(widget)
         v_layout.addItem(category_grid)
-        grid_points = pd.DataFrame(list(product(range(20), range(2))), columns=['row', 'column'])
+        grid_points = pd.DataFrame(list(product(range(10), range(3))), columns=['row', 'column'])
         grid_points = pd.concat((dh.CATEGORIES, grid_points.iloc[:dh.NUM_CATEGORIES]), axis=1)
 
         # iter over every category and create corresponding buttons
@@ -88,6 +88,15 @@ class LabelingTool(QMainWindow):
         button_layout.addWidget(drop_button)
         button_layout.addWidget(next_button)
 
+        # result table
+        self._table = QTableWidget(self)
+        self._table.setRowCount(29)
+        self._table.setColumnCount(2)
+        for key, value in dh.CATEGORIES['text'].iteritems():
+            self._table.setItem(key, 0, QTableWidgetItem(str(value)))
+        v_layout.addWidget(self._table)
+        self._reset_table()
+
         # image loading logic
         self._pixmap = QGraphicsPixmapItem()
         graphics_scene.addItem(self._pixmap)
@@ -96,9 +105,10 @@ class LabelingTool(QMainWindow):
 
     def load_current_image(self):
         current_row_df = self._unlabeled_data.iloc[[self._current_index]]
-        current_labels = current_row_df.iloc[0][0]
+        # current_labels = current_row_df.iloc[0][0]
         for button in self._category_group.buttons():
-            button.setChecked(button.label in current_labels)
+            # button.setChecked(button.label in current_labels)
+            button.setChecked(False)
 
         image = dh.get_images(current_row_df['path_to_image']).iloc[0]
         height, width, byte_value = image.shape
@@ -115,6 +125,7 @@ class LabelingTool(QMainWindow):
         current_row_df = pd.merge(current_row_df, current_labels).drop(columns='key')
 
         self._labeled_data = pd.concat((self._labeled_data, current_row_df))
+        self._reset_table()
         self._current_index += 1
         self.load_current_image()
 
@@ -123,6 +134,11 @@ class LabelingTool(QMainWindow):
         self._dropped_data = pd.concat((self._dropped_data, current_row_df))
         self._current_index += 1
         self.load_current_image()
+
+    def _reset_table(self):
+        # self._table.clear()
+        for key, count in self._labeled_data.groupby('label')['path'].count().iteritems():
+            self._table.setItem(key - 1, 1, QTableWidgetItem(str(count)))
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         QMainWindow.closeEvent(self, event)

@@ -17,7 +17,7 @@ TRAIN_CSV_FILENAME: str = 'train_df.csv'
 TEST_CSV_FILENAME: str = 'test_df.csv'
 
 # Data config constant
-IMAGE_SIZE: int = 224
+IMAGE_SIZE: int = 125
 IMAGE_FLATTEN: int = IMAGE_SIZE * IMAGE_SIZE
 IMAGE_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE)
 IMAGE_INPUT_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE, 3)
@@ -154,11 +154,12 @@ def construct_path_csv(train_ratio: float, labels_csv: pd.DataFrame=pd.DataFrame
     :return:
     """
     # check if labels pd is defined
-    if labels_csv is None:
+    if labels_csv.empty:
         # take all
         train_df, test_df = get_paths(utils.INPUT_DIRECTION, utils.LABELS_PATH, train_ratio)
     else:
         # take ony from labels dataframe
+        labels_csv['label'] = labels_csv['label'].astype(np.int)
         train_df, test_df = _shuffle_split_train_test(labels_csv, train_ratio)
 
     # Save to temporary files
@@ -167,4 +168,4 @@ def construct_path_csv(train_ratio: float, labels_csv: pd.DataFrame=pd.DataFrame
 
 
 if __name__ == '__main__':
-    construct_path_csv()
+    construct_path_csv(0.7)
