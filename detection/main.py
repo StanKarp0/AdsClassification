@@ -4,7 +4,7 @@ import tensorflow as tf
 
 import utils
 from classification import data_handler, vis
-# from object_detection.utils import label_map_util
+from object_detection.utils import label_map_util
 from object_detection.utils import ops as utils_ops
 from object_detection.utils import visualization_utils as vis_util
 
@@ -70,7 +70,7 @@ def main():
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
 
-    # category_index = label_map_util.create_category_index_from_labelmap(utils.PATH_TO_LABELS, use_display_name=True)
+    category_index = label_map_util.create_category_index_from_labelmap(utils.PATH_TO_LABELS, use_display_name=True)
 
     for _, row in examples.iterrows():
         output_dict = run_inference_for_single_image(row['image'], detection_graph)

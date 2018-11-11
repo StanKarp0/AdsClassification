@@ -7,7 +7,7 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QButtonGroup, QGridLayout, QCheckBox, QVBoxLayout, \
-    QHBoxLayout, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QTableWidget, QTableWidgetItem
+    QHBoxLayout, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QTableWidget, QTableWidgetItem, QLabel
 from skimage import transform
 
 import utils
@@ -95,13 +95,28 @@ class LabelingTool(QMainWindow):
         for key, value in dh.CATEGORIES['text'].iteritems():
             self._table.setItem(key, 0, QTableWidgetItem(str(value)))
         v_layout.addWidget(self._table)
-        self._reset_table()
+
+        # result labels
+        h_labels_layout = QHBoxLayout(self)
+        v_layout.addLayout(h_labels_layout)
+
+        self._labeled_count = QLabel('Labeled: ', self)
+        self._rejected_count = QLabel('Rejected: ', self)
+        self._unlabeled_count = QLabel('Unlabeled: ', self)
+
+        v_layout.addWidget(self._labeled_count)
+        v_layout.addWidget(self._rejected_count)
+        v_layout.addWidget(self._unlabeled_count)
 
         # image loading logic
         self._pixmap = QGraphicsPixmapItem()
         graphics_scene.addItem(self._pixmap)
         self._current_index = 0
         self.load_current_image()
+
+        # reset views
+        self._reset_table()
+        self._reset_labels()
 
     def load_current_image(self):
         current_row_df = self._unlabeled_data.iloc[[self._current_index]]
@@ -125,6 +140,7 @@ class LabelingTool(QMainWindow):
         current_row_df = pd.merge(current_row_df, current_labels).drop(columns='key')
 
         self._labeled_data = pd.concat((self._labeled_data, current_row_df))
+        self._reset_labels()
         self._reset_table()
         self._current_index += 1
         self.load_current_image()
@@ -132,6 +148,7 @@ class LabelingTool(QMainWindow):
     def _on_drop(self):
         current_row_df = self._unlabeled_data.iloc[[self._current_index]]
         self._dropped_data = pd.concat((self._dropped_data, current_row_df))
+        self._reset_labels()
         self._current_index += 1
         self.load_current_image()
 
@@ -139,6 +156,17 @@ class LabelingTool(QMainWindow):
         # self._table.clear()
         for key, count in self._labeled_data.groupby('label')['path'].count().iteritems():
             self._table.setItem(key - 1, 1, QTableWidgetItem(str(count)))
+
+    def _reset_labels(self):
+        labeled_count = self._labeled_data.shape[0]
+        dropped_count = self._dropped_data.shape[0]
+        unlabeled_count = self._unlabeled_data.shape[0] - self._current_index
+
+        print(labeled_count, dropped_count, unlabeled_count)
+
+        self._labeled_count.setText('Labeled: ' + str(labeled_count))
+        self._rejected_count.setText('Dropped: ' + str(dropped_count))
+        self._unlabeled_count.setText('Unlabeled: ' + str(unlabeled_count))
 
     def closeEvent(self, event: QtGui.QCloseEvent):
         QMainWindow.closeEvent(self, event)

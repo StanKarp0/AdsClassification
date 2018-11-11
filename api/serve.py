@@ -1,6 +1,5 @@
 
 
-
 def get_model_api():
     """Returns lambda function for api"""
     # 1. initialize model once and for all and reload weights

@@ -30,23 +30,47 @@ def get_model() -> Model:
     """
     model = Sequential()
 
-    model.add(Conv2D(filters=32,
-                     kernel_size=(5, 5),
+    # part 1
+    model.add(Conv2D(filters=16,
+                     kernel_size=(3, 3),
                      activation='relu',
                      input_shape=MODEL_INPUT_SHAPE))
-
-    model.add(MaxPooling2D(pool_size=(2, 2),
-                           strides=(2, 2)))
-
-    model.add(Conv2D(filters=64,
-                     kernel_size=(5, 5),
+    model.add(Conv2D(filters=16,
+                     kernel_size=(3, 3),
                      activation='relu'))
-
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
+    # part 2
+    model.add(Conv2D(filters=32,
+                     kernel_size=(3, 3),
+                     activation='relu'))
+    model.add(Conv2D(filters=32,
+                     kernel_size=(3, 3),
+                     activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    # part 3
+    model.add(Conv2D(filters=64,
+                     kernel_size=(3, 3),
+                     activation='relu'))
+    model.add(Conv2D(filters=64,
+                     kernel_size=(3, 3),
+                     activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    # # part 4
+    # model.add(Conv2D(filters=256,
+    #                  kernel_size=(3, 3),
+    #                  activation='relu'))
+    # model.add(Conv2D(filters=256,
+    #                  kernel_size=(3, 3),
+    #                  activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    # Dense
     model.add(Flatten())
 
-    model.add(Dense(units=1000,
+    model.add(Dense(units=500,
                     activation='relu'))
 
     model.add(Dense(units=data_handler.NUM_CATEGORIES,

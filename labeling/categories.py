@@ -1,5 +1,6 @@
 import pandas as pd
 
+# Old categories from topics.json
 # CATEGORIES: pd.DataFrame = pd.DataFrame([
 #     [1, "Restaurants, cafe, fast food", "restaurant"],
 #     [2, "Chocolate, cookies, candy, ice cream", "chocolate"],
@@ -69,7 +70,7 @@ CATEGORIES: pd.DataFrame = pd.DataFrame([
     [20, 'Cleaning products', "Cleaning products (detergents, fabric softeners, soap, tissues, paper towels, etc.)"],
     [21, 'Home', "Home improvements and repairs (furniture, decoration, lawn care, plumbing, etc.) Home appliances (coffee makers, dishwashers, cookware, vacuum cleaners, heaters, music players, etc.)"],
     [22, 'Travel', "Vacation and travel (airlines, cruises, theme parks, hotels, travel agents, etc.)"],
-    [23, 'Media', "Media and arts (TV shows, movies, musicals, books, audio books, etc.)"],
+    [23, 'Arts', "Media and arts (TV shows, movies, musicals, books, audio books, etc.)"],
     [24, 'Sports', "Sports equipment and activities"],
     [25, 'Shopping stores', "Shopping (department stores, drug stores, groceries, etc.) Restaurants, cafe, fast food"],
     [26, 'Gambling', "Gambling (lotteries, casinos, etc.)"],
@@ -77,3 +78,6 @@ CATEGORIES: pd.DataFrame = pd.DataFrame([
     [28, 'Social sites', 'Social Sites, Twitter, Facebook, Insta, Dating Sites'],
     [29, 'Tools and Hardware', "Stationery & Office Supplies, Tools & Hardware"]
      ], columns=['label', 'text', 'description'])
+
+if __name__ == '__main__':
+    CATEGORIES.to_csv('label_categories.csv', index=False)

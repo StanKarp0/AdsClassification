@@ -1,0 +1,52 @@
+import pandas as pd
+
+CATEGORIES_MAPPER = pd.DataFrame([
+    (1, 1),
+    (2, 1),
+    (3, 1),
+    (4, 1),
+    (5, 1),
+    (6, 2),
+    (7, 3),
+    (8, 4),
+    (9, 4),
+    (10, 4),
+    (11, 4),
+    (12, 5),
+    (13, 4),
+    (14, 6),
+    (15, 7),
+    (16, 8),
+    (17, 6),
+    (18, 9),
+    (19, 10),
+    (20, 6),
+    (21, 11),
+    (22, 12),
+    (23, 13),
+    (24, 14),
+    (25, 4),
+    (26, 15),
+    (27, 16),
+    (28, 4),
+    (29, 5)
+], columns=['old_label', 'label'])
+
+SIMPLE_CATEGORIES = pd.DataFrame([
+    (1, 'Grocery'),
+    (2, 'Automotive'),
+    (3, 'Electronics'),
+    (4, 'Services'),
+    (5, 'Software'),
+    (6, 'Beauty'),
+    (7, 'Health'),
+    (8, 'Job'),
+    (9, 'Baby'),
+    (10, 'Games'),
+    (11, 'Home'),
+    (12, 'Travel'),
+    (13, 'Arts'),
+    (14, 'Sports'),
+    (15, 'Gambling'),
+    (16, 'Social issue')
+])

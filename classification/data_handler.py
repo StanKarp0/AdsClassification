@@ -1,5 +1,4 @@
 import json
-import sys
 from functools import partial
 
 import numpy as np
@@ -11,13 +10,13 @@ from skimage import transform
 from tensorflow.python.keras.utils import Sequence
 
 import utils
-from classification import categories
+from labeling import categories
 
 TRAIN_CSV_FILENAME: str = 'train_df.csv'
 TEST_CSV_FILENAME: str = 'test_df.csv'
 
 # Data config constant
-IMAGE_SIZE: int = 125
+IMAGE_SIZE: int = 224
 IMAGE_FLATTEN: int = IMAGE_SIZE * IMAGE_SIZE
 IMAGE_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE)
 IMAGE_INPUT_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE, 3)
@@ -27,13 +26,15 @@ CATEGORIES: pd.DataFrame = categories.CATEGORIES
 NUM_CATEGORIES: int = CATEGORIES.shape[0]
 
 
-def _get_image(image_path: str, reshape=True) -> np.array:
+def _get_image(image_path: str, reshape=True, size=IMAGE_SIZE) -> np.array:
     """
     Function process input image path
     :param image_path: path to image
     :return: np.array of size (IMAGE_SIZE, IMAGE_SIZE, 3)
     """
     image = skimage.io.imread(image_path)
+    image_shape: tuple = (size, size)
+    image_input_shape: tuple = (size, size, 3)
 
     # case when png animation - first dimension contains animation frames
     if image.ndim > 3:
@@ -44,8 +45,8 @@ def _get_image(image_path: str, reshape=True) -> np.array:
 
     # image resize and conversion to grey scale
     if reshape:
-        image = transform.resize(image, IMAGE_SHAPE)
-        assert image.shape == IMAGE_INPUT_SHAPE, 'Image: %s' % str(image.shape)
+        image = transform.resize(image, image_shape)
+        assert image.shape == image_input_shape, 'Image: %s' % str(image.shape)
     # image = color.rgb2grey(image)
 
     return image
@@ -92,8 +93,10 @@ def _get_data_set(data: pd.DataFrame) -> tuple:
     return x, y
 
 
-def get_images(paths_to_images: pd.Series) -> pd.Series:
-    return paths_to_images.apply(partial(_get_image, reshape=False))
+def get_images(paths_to_images: pd.Series, reshape=False, size=None) -> pd.Series:
+    if size is not None:
+        reshape = True
+    return paths_to_images.apply(partial(_get_image, reshape=reshape, size=size))
 
 
 def get_paths(input_directory: str, label_path: str, train_ratio:float=0.7) -> (pd.DataFrame, pd.DataFrame):
@@ -134,9 +137,13 @@ def get_paths(input_directory: str, label_path: str, train_ratio:float=0.7) -> (
 
 class PittAdsSequence(Sequence):
 
-    def __init__(self, path_to_df, batch_size=64):
+    @classmethod
+    def from_path(cls, path_to_df, batch_size=64):
+        return cls(pd.read_csv(path_to_df), batch_size)
+
+    def __init__(self, paths_df, batch_size=64):
         self._batch_size = batch_size
-        self._paths_df = pd.read_csv(path_to_df)
+        self._paths_df = paths_df
         self._len = int(self._paths_df.shape[0] / batch_size)
 
     def __getitem__(self, index):
@@ -165,6 +172,8 @@ def construct_path_csv(train_ratio: float, labels_csv: pd.DataFrame=pd.DataFrame
     # Save to temporary files
     train_df.to_csv(TRAIN_CSV_FILENAME, index=False)
     test_df.to_csv(TEST_CSV_FILENAME, index=False)
+
+    return train_df, test_df
 
 
 if __name__ == '__main__':
