@@ -79,5 +79,7 @@ CATEGORIES: pd.DataFrame = pd.DataFrame([
     [29, 'Tools and Hardware', "Stationery & Office Supplies, Tools & Hardware"]
      ], columns=['label', 'text', 'description'])
 
+NUM_CATEGORIES = CATEGORIES.shape[0]
+
 if __name__ == '__main__':
     CATEGORIES.to_csv('label_categories.csv', index=False)

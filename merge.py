@@ -1,12 +1,7 @@
-from typing import Iterable
-
 import tensorflow as tf
 from tensorflow.python.platform import gfile
-import pandas as pd
-import numpy as np
 
 import utils
-from classification import data_handler as dh, vis
 
 
 def print_graph(graph):
@@ -46,7 +41,7 @@ with tf.Session() as persisted_sess:
         graph_def_class = tf.GraphDef()
         graph_def_class.ParseFromString(f.read())
 
-    with gfile.FastGFile(utils.PATH_TO_FROZEN_GRAPH, 'rb') as f:
+    with gfile.FastGFile(utils.PATH_TO_DETECTION_GRAPH, 'rb') as f:
         graph_def_detection = tf.GraphDef()
         graph_def_detection.ParseFromString(f.read())
 
@@ -83,7 +78,7 @@ with tf.Session() as persisted_sess:
         #     [val.name for val in result_dict.values()]  # The output node names are used to select the usefull nodes
         # )
 
-        with tf.gfile.GFile(utils.MERGE_GRAPH, "wb") as f:
+        with tf.gfile.GFile(utils.PATH_TO_MERGED_GRAPH, "wb") as f:
             f.write(output_graph_def.SerializeToString())
             print("%d ops in the final graph." % len(output_graph_def.node))
 

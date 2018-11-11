@@ -8,10 +8,9 @@ from PyQt5.QtCore import QRectF
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QButtonGroup, QGridLayout, QCheckBox, QVBoxLayout, \
     QHBoxLayout, QPushButton, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QTableWidget, QTableWidgetItem, QLabel
-from skimage import transform
 
 import utils
-from classification import data_handler as dh
+from labeling import categories
 
 SCENE_SIZE = 900
 
@@ -53,7 +52,7 @@ class LabelingTool(QMainWindow):
             self._dropped_data: pd.DataFrame = pd.DataFrame(columns=['path', 'label', 'path_to_image'])
 
         # load all data
-        unlabeled_data, _ = dh.get_paths(utils.INPUT_DIRECTION, utils.LABELS_PATH, 1)
+        unlabeled_data, _ = utils.get_paths(utils.INPUT_DIRECTION, utils.LABELS_PATH, 1)
 
         # filter previously labeled and dropped
         previous_labeled = unlabeled_data['path'].isin(self._labeled_data['path'])
@@ -67,7 +66,7 @@ class LabelingTool(QMainWindow):
         category_grid = QGridLayout(widget)
         v_layout.addItem(category_grid)
         grid_points = pd.DataFrame(list(product(range(10), range(3))), columns=['row', 'column'])
-        grid_points = pd.concat((dh.CATEGORIES, grid_points.iloc[:dh.NUM_CATEGORIES]), axis=1)
+        grid_points = pd.concat((categories.CATEGORIES, grid_points.iloc[:categories.NUM_CATEGORIES]), axis=1)
 
         # iter over every category and create corresponding buttons
         for _, grid_row in grid_points.iterrows():
@@ -92,7 +91,7 @@ class LabelingTool(QMainWindow):
         self._table = QTableWidget(self)
         self._table.setRowCount(29)
         self._table.setColumnCount(2)
-        for key, value in dh.CATEGORIES['text'].iteritems():
+        for key, value in categories.CATEGORIES['text'].iteritems():
             self._table.setItem(key, 0, QTableWidgetItem(str(value)))
         v_layout.addWidget(self._table)
 
@@ -125,7 +124,7 @@ class LabelingTool(QMainWindow):
             # button.setChecked(button.label in current_labels)
             button.setChecked(False)
 
-        image = dh.get_images(current_row_df['path_to_image']).iloc[0]
+        image = utils.get_images(current_row_df['path_to_image']).iloc[0]
         height, width, byte_value = image.shape
         byte_value = byte_value * width
         qt_image = QImage(image, width, height, byte_value, QImage.Format_RGB888)

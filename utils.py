@@ -1,35 +1,40 @@
-import pandas as pd
-import numpy as np
+import json
+import os
+from functools import partial
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import skimage.io
+from PIL import Image, ImageDraw, ImageFont
+from skimage import transform
+
+# Data config constant
+IMAGE_SIZE: int = 299
+IMAGE_FLATTEN: int = IMAGE_SIZE * IMAGE_SIZE
+IMAGE_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE)
+IMAGE_INPUT_SHAPE: tuple = (IMAGE_SIZE, IMAGE_SIZE, 3)
 
 # Constant path variables for classification
-from PIL import Image, ImageDraw, ImageFont
-
 INPUT_DIRECTION: str = r'/home/wojciech/Studia/Ads/'
-LABELS_PATH: str = r'/home/wojciech/Studia/Ads/Topics.json'
-MODEL_SAVE_PATH: str = r'/home/wojciech/Studia/Ads/ads_classification.json'
-MODEL_SAVE_PATH_WEIGHTS: str = r'/home/wojciech/Studia/Ads/ads_classification_weights.h5'
 
-# Object detection paths
-PATH_TO_FROZEN_GRAPH: str = '/home/wojciech/Studia/Ads/faster_rcnn_resnet50_coco_2018_01_28/frozen_inference_graph.pb'
-PATH_TO_LABELS: str = r'/home/wojciech/Dev/ObjectDetection/models/research/object_detection/data/mscoco_label_map.pbtxt'
-
-PATH_TO_CLASS_GRAPH: str = r'/home/wojciech/Studia/Ads/ads-classification.pb'
-PATH_TO_DETECTION_GRAPH = r'/home/wojciech/Studia/Ads/ads-detection.pb'
-
-# Merged
-MERGE_GRAPH: str = r'/home/wojciech/Studia/Ads/ads.pb'
+# Graph paths
+PATH_TO_CLASS_GRAPH: str = os.path.join(INPUT_DIRECTION, 'ads-classification.pb')
+PATH_TO_DETECTION_GRAPH = os.path.join(INPUT_DIRECTION, 'ads-detection.pb')
+PATH_TO_MERGED_GRAPH: str = os.path.join(INPUT_DIRECTION, 'ads.pb')
 
 # Labeling tool paths
-LABELLING_OUTPUT_PATH = r'/home/wojciech/Studia/Ads/labels.csv'
-LABELLING_DROPPED_PATH = r'/home/wojciech/Studia/Ads/dropped.csv'
-LABELLING_SORTED_DIRECTORY = r'/home/wojciech/Studia/Ads/Dataset'
+LABELS_PATH: str = os.path.join(INPUT_DIRECTION, 'Topics.json')
+LABELLING_OUTPUT_PATH = os.path.join(INPUT_DIRECTION, 'labels.csv')
+LABELLING_DROPPED_PATH = os.path.join(INPUT_DIRECTION, 'dropped.csv')
+LABELLING_SORTED_DIRECTORY = os.path.join(INPUT_DIRECTION, 'Dataset')
 
-
-PATH_MAPPER_DETECTION = 'mscoco_label_map.csv'
-PATH_MAPPER_CLASSIFICATION = 'categories.csv'
-mapper_detection: pd.DataFrame = pd.read_csv(PATH_MAPPER_DETECTION, index_col='id')
-mapper_classification: pd.DataFrame = pd.read_csv(PATH_MAPPER_CLASSIFICATION, index_col='label')
+# Project files
+_current_path = os.path.dirname(os.path.realpath(__file__))
+PATH_MAPPER_DETECTION = os.path.join(_current_path, r'oid_bbox_trainable_label_map.csv')
+PATH_MAPPER_CLASSIFICATION = os.path.join(_current_path, r'categories.csv')
+MAPPER_DETECTION: pd.DataFrame = pd.read_csv(PATH_MAPPER_DETECTION, index_col='id')
+MAPPER_CLASSIFICATION: pd.DataFrame = pd.read_csv(PATH_MAPPER_CLASSIFICATION, index_col='label')
 
 
 STANDARD_COLORS = [
@@ -72,9 +77,9 @@ def _get_color(detection_class: int) -> str:
 
 def construct_detection_df(detections: dict) -> pd.DataFrame:
 
-    detections_df = pd.DataFrame(detections['detection_boxes'], columns=detection_cords_columns)
-    detections_df['class'] = detections['detection_classes']
-    detections_df['score'] = detections['detection_scores']
+    detections_df = pd.DataFrame(detections['detect/detection_boxes'], columns=detection_cords_columns)
+    detections_df['class'] = detections['detect/detection_classes'].astype(np.int)
+    detections_df['score'] = detections['detect/detection_scores']
 
     # calculating box color
     detections_df['color'] = detections_df['class'].apply(_get_color)
@@ -83,7 +88,7 @@ def construct_detection_df(detections: dict) -> pd.DataFrame:
     detections_df = detections_df[detections_df['score'] > 0]
 
     # calculate display name
-    detections_df = pd.merge(detections_df, mapper_detection, left_on='class', right_on='id')
+    detections_df = pd.merge(detections_df, MAPPER_DETECTION, left_on='class', right_on='id')
 
     # label name
     detections_df['label'] = detections_df.display_name + (detections_df.score * 100).map(': {:,.0f}%'.format)
@@ -158,8 +163,8 @@ def decode_classification(preds: np.ndarray) -> pd.DataFrame:
     :param preds: np.ndarray
     :return: pd.DataFrame
     """
-    preds_df = pd.DataFrame(preds.T, columns=['score'], index=mapper_classification.index)
-    preds_df = pd.concat((mapper_classification, preds_df), axis=1)
+    preds_df = pd.DataFrame(preds.T, columns=['score'], index=MAPPER_CLASSIFICATION.index)
+    preds_df = pd.concat((MAPPER_CLASSIFICATION, preds_df), axis=1)
     return preds_df.sort_values('score', ascending=False)
 
 
@@ -181,7 +186,7 @@ def show_images(data: pd.DataFrame, categories: pd.DataFrame, show_result: bool=
     axes = axes.flatten()
 
     # append label text
-    data = pd.merge(data, categories).rename(columns={'text': 'text_label'})
+    data = pd.merge(data, categories.reset_index()).rename(columns={'text': 'text_label'})
     if show_result:
         data = pd.merge(data, categories, left_on='pred', right_on='label')\
             .rename(columns={'text': 'text_pred'})
@@ -201,9 +206,10 @@ def show_images(data: pd.DataFrame, categories: pd.DataFrame, show_result: bool=
     plt.show()
 
 
-def show_error(data: pd.DataFrame, plot_shape: tuple=(4, 4)):
+def show_error(data: pd.DataFrame, categories: pd.DataFrame, plot_shape: tuple=(4, 4)):
     """
     Function shows errors in prediction.
+    :param categories:
     :param data: pd.DataFrame - 'image', 'label', 'pred' columns required
     :param plot_shape: plot shape
     :return: None
@@ -211,12 +217,13 @@ def show_error(data: pd.DataFrame, plot_shape: tuple=(4, 4)):
     assert ['image', 'label', 'pred'] in data, '"image", "label", "pred" columns required'
 
     errors = data[data['label'] != data['pred']]
-    show_images(errors, show_result=True, plot_shape=plot_shape)
+    show_images(errors, categories, show_result=True, plot_shape=plot_shape)
 
 
-def show_categories(data: pd.DataFrame, show_result: bool=False, errors: bool=False):
+def show_categories(data: pd.DataFrame, categories: pd.DataFrame, show_result: bool=False, errors: bool=False):
     """
     Function shows examples of labels
+    :param categories:
     :param data: pd.DataFrame - columns: 'label' and 'image' required
     :param show_result: bool - show predicted label
     :param errors: filter only errors
@@ -232,4 +239,99 @@ def show_categories(data: pd.DataFrame, show_result: bool=False, errors: bool=Fa
 
     # loop gets first row from every label category
     first_from_cat_df = pd.DataFrame([label_df.iloc[0] for _, label_df in data.groupby('label', as_index=False)])
-    show_images(first_from_cat_df, show_result, (5, 4))
+    show_images(first_from_cat_df, categories, show_result, (5, 4))
+
+
+def _get_image(image_path: str) -> np.array:
+    """
+    Function process input image path
+    :param image_path: path to image
+    :return: np.array
+    """
+    image = skimage.io.imread(image_path)
+
+    # case when png animation - first dimension contains animation frames
+    if image.ndim > 3:
+        image = image[0]
+    # in case of gray only image.
+    elif image.ndim == 2:
+        image = np.tile(image[:, :, None], (1, 1, 3))
+
+    return image
+
+
+def transform_image(image: np.ndarray, size=IMAGE_SIZE):
+    image_shape: tuple = (size, size)
+    image_input_shape: tuple = (size, size, 3)
+
+    # image resize and conversion
+    image = transform.resize(image, image_shape)
+    assert image.shape == image_input_shape, 'Image: %s' % str(image.shape)
+
+    image = (image * 255).astype(np.int)
+    image = np.expand_dims(image, 0)
+
+    return image
+
+
+def _shuffle_split_train_test(df: pd.DataFrame, train_ratio: float = 0.7) -> tuple:
+    """
+    Function shuffle data and splits dataframe into train and test sets
+    :param df: pd.DataFrame
+    :param train_ratio: float
+    :return: tuple (train_df: pd.DataFrame, test_df: pd.DataFrame)
+    """
+    # shuffle
+    df = df.sample(frac=1).reset_index(drop=True)
+
+    # train, test split
+    train_shape = int(df.shape[0] * train_ratio)
+    train_df = df.iloc[:train_shape]
+    test_df = df.iloc[train_shape:].reset_index(drop=True)
+
+    return train_df, test_df
+
+
+def get_images(paths_to_images: pd.Series) -> pd.Series:
+    """
+
+    :param paths_to_images:
+    :return:
+    """
+    return paths_to_images.apply(_get_image)
+
+
+def get_paths(input_directory: str, label_path: str, train_ratio:float=0.7) -> (pd.DataFrame, pd.DataFrame):
+    """
+    Function prepare data
+    :param label_path:
+    :param input_directory: path to data directory
+    :param train_ratio:
+    :return: tuple (train_df: pd.DataFrame, test_df: pd.DataFrame)
+    """
+
+    # Loading Topics json to pandas DataFrame.
+    with open(label_path, 'r') as label_path_file:
+        labels_json = json.load(label_path_file)
+
+        # Topics dict structure [{path_to_image: [list of topics, various list sizes]}]
+        # Flatten inner list - list of topics. Index as path and values topics. Multiple rows
+        # for one image
+        labels_df = pd.DataFrame.from_dict(labels_json, orient='index').unstack(0).dropna()
+
+        # Filter out not numerical labels.
+        labels_df = labels_df[labels_df.str.contains(r'^[0-9]{1,2}$')].astype(int)
+
+        # Adding path as column and dropping duplicates of pair (path, topic).
+        labels_df = labels_df.reset_index(1).drop_duplicates().reset_index(drop=True)
+
+        # Rename df columns.
+        labels_df = labels_df.rename(columns={'level_1': 'path', 0: 'label'})
+
+        # Append absolute path to image
+        labels_df['path_to_image'] = input_directory + labels_df.path.astype(str)
+
+    # shuffle data and split into test and train set
+    train, test = _shuffle_split_train_test(labels_df, train_ratio)
+
+    return train, test
