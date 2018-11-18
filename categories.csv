@@ -1,19 +1,19 @@
-label,text,description
-0,Alcohol,Alcohol
-1,Arts,Arts
-2,Automotive,Automotive
-3,Beauty,Beauty
-4,Cleaning_products,Cleaning_products
-5,Clothing,Clothing
-6,Coffee_Tea,Coffee_Tea
-7,Electronics,Electronics
-8,Financial,Financial
-9,Games_and_Toys,Games_and_Toys
-10,Grocery,Grocery
-11,Health,Health
-12,Media,Media
-13,Shopping_stores,Shopping_stores
-14,Social_issue,Social_issue
-15,Soda,Soda
-16,Sports,Sports
-17,Travel,Travel
+label,all_label,text,description,count
+0,3,Alcohol,"Alcohol, alcohol",172
+1,23,Arts,"Media and arts (TV shows, movies, musicals, books, audio books, etc.)",46
+2,6,Automotive,"Cars, automobiles (car sales, auto parts, car insurance, car repair, gas, motor oil, etc.)",295
+3,14,Beauty,"Beauty products and cosmetics (deodorants, toothpaste, makeup, hair products, laser hair removal, etc.)",479
+4,20,Cleaning_products,"Cleaning products (detergents, fabric softeners, soap, tissues, paper towels, etc.)",104
+5,17,Clothing,"Clothing and accessories (jeans, shoes, eye glasses, handbags, watches, jewelry)",419
+6,5,Coffee_Tea,"Coffee, tea",68
+7,7,Electronics,"Electronics (computers, laptops, tablets, cellphones, TVs, etc.), electronics",271
+8,9,Financial,"Financial services (banks, credit cards, investment firms, etc.)",79
+9,19,Games_and_Toys,Games and toys (including video and mobile games),40
+10,1,Grocery,"Chips, snacks, nuts, fruit, gum, cereal, yogurt, soups, Chocolate, cookies, candy, ice cream, chocolate, Seasoning, condiments, ketchup, seasoning",409
+11,15,Health,"Healthcare and medications (hospitals, health insurance, allergy, cold remedy, home tests, vitamins)",56
+12,8,Media,"Phone, TV and internet service providers, phone_tv_internet_providers",44
+13,25,Shopping_stores,"Shopping (department stores, drug stores, groceries, etc.) Restaurants, cafe, fast food",88
+14,27,Social_issue,"Domestic violence, Self esteem, bullying, cyber bullying, Political candidates (support or opposition), charities, Human rights, Safety, safe driving, fire safety, Smoking, alcohol abuse, Environment, nature, pollution, wildlife , environment, Animal rights, animal abuse",205
+15,4,Soda,"Soda, juice, milk, energy drinks, water soda Coffee, tea, coffee",194
+16,24,Sports,Sports equipment and activities,333
+17,22,Travel,"Vacation and travel (airlines, cruises, theme parks, hotels, travel agents, etc.)",208

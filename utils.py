@@ -1,3 +1,4 @@
+import itertools
 import json
 import os
 from functools import partial
@@ -240,6 +241,38 @@ def show_categories(data: pd.DataFrame, categories: pd.DataFrame, show_result: b
     # loop gets first row from every label category
     first_from_cat_df = pd.DataFrame([label_df.iloc[0] for _, label_df in data.groupby('label', as_index=False)])
     show_images(first_from_cat_df, categories, show_result, (5, 4))
+
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=90)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+    plt.show()
 
 
 def _get_image(image_path: str) -> np.array:
